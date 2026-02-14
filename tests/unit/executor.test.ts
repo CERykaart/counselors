@@ -100,7 +100,11 @@ describe('execute', () => {
 
     try {
       writeFileSync(scriptPath, 'process.stdout.write("OK")', 'utf-8');
-      writeFileSync(cmdPath, '@echo off\r\nnode "%~dp0emit-ok.js"\r\n', 'utf-8');
+      writeFileSync(
+        cmdPath,
+        '@echo off\r\nnode "%~dp0emit-ok.js"\r\n',
+        'utf-8',
+      );
 
       // If metacharacters are interpreted by cmd.exe, this creates markerPath.
       const literal = `hello & type nul > "${markerPath}"`;

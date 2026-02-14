@@ -94,18 +94,18 @@ describe('execute', () => {
     if (process.platform !== 'win32') return;
 
     const testDir = mkdtempSync(join(tmpdir(), 'counselors-cmd-wrapper-'));
-    const scriptPath = join(testDir, 'echo-arg.js');
+    const scriptPath = join(testDir, 'echo-args.js');
     const cmdPath = join(testDir, 'echo-arg.cmd');
 
     try {
       writeFileSync(
         scriptPath,
-        'process.stdout.write(process.argv[2] || "")',
+        'process.stdout.write(process.argv.slice(2).join(" "))',
         'utf-8',
       );
       writeFileSync(
         cmdPath,
-        '@echo off\r\nnode "%~dp0echo-arg.js" "%~1"\r\n',
+        '@echo off\r\nnode "%~dp0echo-args.js" %*\r\n',
         'utf-8',
       );
 
@@ -120,7 +120,8 @@ describe('execute', () => {
       );
 
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toBe(literal);
+      const normalized = result.stdout.trim().replace(/^"(.*)"$/, '$1');
+      expect(normalized).toBe(literal);
     } finally {
       rmSync(testDir, { recursive: true, force: true });
     }

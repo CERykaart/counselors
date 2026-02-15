@@ -137,7 +137,6 @@ describe('execute', () => {
     const scriptPath = join(testDir, 'print-path.js');
     const cmdPath = join(testDir, 'print-path.cmd');
 
-    const originalPath = process.env.PATH;
     try {
       writeFileSync(
         scriptPath,
@@ -150,13 +149,15 @@ describe('execute', () => {
         'utf-8',
       );
 
-      // Keep PATH minimal so we can assert the injected prefix deterministically.
-      process.env.PATH = 'C:\\Windows\\System32';
+      // Keep PATH minimal so we can assert the injected prefix deterministically,
+      // without mutating the test runner's process.env.
+      const minimalPath = 'C:\\Windows\\System32';
 
       const result = await execute(
         {
           cmd: cmdPath,
           args: [],
+          env: { PATH: minimalPath },
           cwd: testDir,
         },
         5000,
@@ -164,10 +165,8 @@ describe('execute', () => {
 
       expect(result.exitCode).toBe(0);
       expect(result.stdout.startsWith(`${testDir}${delimiter}`)).toBe(true);
-      expect(result.stdout).toContain('C:\\Windows\\System32');
+      expect(result.stdout).toContain(minimalPath);
     } finally {
-      if (originalPath == null) delete process.env.PATH;
-      else process.env.PATH = originalPath;
       rmSync(testDir, { recursive: true, force: true });
     }
   });
@@ -179,7 +178,6 @@ describe('execute', () => {
     const scriptPath = join(testDir, 'print-path.js');
     const cmdPath = join(testDir, 'print-path.cmd');
 
-    const originalPath = process.env.PATH;
     try {
       writeFileSync(
         scriptPath,
@@ -192,12 +190,13 @@ describe('execute', () => {
         'utf-8',
       );
 
-      process.env.PATH = `${testDir}\\${delimiter}C:\\Windows\\System32`;
+      const expectedPath = `${testDir}\\${delimiter}C:\\Windows\\System32`;
 
       const result = await execute(
         {
           cmd: cmdPath,
           args: [],
+          env: { PATH: expectedPath },
           cwd: testDir,
         },
         5000,
@@ -205,10 +204,8 @@ describe('execute', () => {
 
       expect(result.exitCode).toBe(0);
       // PATH should be unchanged (no duplicate injected prefix).
-      expect(result.stdout).toBe(process.env.PATH);
+      expect(result.stdout).toBe(expectedPath);
     } finally {
-      if (originalPath == null) delete process.env.PATH;
-      else process.env.PATH = originalPath;
       rmSync(testDir, { recursive: true, force: true });
     }
   });

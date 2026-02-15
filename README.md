@@ -24,6 +24,22 @@ Run `counselors init --auto` to discover and configure installed AI CLIs. Then r
 
 Your agent will configure available tools and set up the `/counselors` slash command.
 
+### Updating your skill
+
+The recommended skill template changes over time. If you already installed `/counselors` in your agent system, don’t blindly overwrite it.
+
+Copy/paste this into your AI coding agent:
+
+```
+The counselors CLI has an updated skill template.
+
+1. Run `counselors skill` and capture the full output.
+2. Open my existing counselors skill file and compare VERY CAREFULLY for anything that changed.
+3. Apply the updates manually; do not blindly overwrite.
+4. If you need more context, check the git history for the skill template here:
+   https://github.com/aarondfrancis/counselors/commits/main/src/commands/skill.ts
+```
+
 **How it works:**
 
 1. You invoke the Counselors skill with a prompt

@@ -106,8 +106,8 @@ counselors run -t opus,opus,opus "Review this"  # Run the same tool multiple tim
 | Flag | Description |
 |------|-------------|
 | `-f, --file <path>` | Use a prompt file (no wrapping) |
-| `-t, --tools <list>` | Comma-separated tool IDs |
-| `-g, --group <names>` | Comma-separated group name(s) (expands to tool IDs) |
+| `-t, --tools <tools>` | Comma-separated tool IDs |
+| `-g, --group <groups>` | Comma-separated group name(s) (expands to tool IDs) |
 | `--context <paths>` | Gather context from paths (comma-separated, or `.` for git diff) |
 | `--read-only <level>` | `strict`, `best-effort`, `off` (defaults to config `readOnly`) |
 | `--dry-run` | Show what would run without executing |

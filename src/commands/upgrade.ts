@@ -16,6 +16,25 @@ const METHOD_LABEL: Record<string, string> = {
   unknown: 'Unknown',
 };
 
+const INSTALL_SCRIPT =
+  'curl -fsSL https://github.com/aarondfrancis/counselors/raw/main/install.sh | bash';
+const MANUAL_UPGRADE_OPTIONS = [
+  'brew upgrade counselors',
+  'npm install -g counselors@latest',
+  'pnpm add -g counselors@latest',
+  'yarn global add counselors@latest',
+  INSTALL_SCRIPT,
+] as const;
+const FORCE_NOTE =
+  'If this is a standalone install in a non-standard location, re-run with --force.';
+
+function printManualUpgradeGuidance(): void {
+  warn('Try one of:');
+  for (const option of MANUAL_UPGRADE_OPTIONS) {
+    warn(`  ${option}`);
+  }
+}
+
 export function registerUpgradeCommand(program: Command): void {
   program
     .command('upgrade')
@@ -53,17 +72,8 @@ export function registerUpgradeCommand(program: Command): void {
             info(
               'Install method is unknown; would not run an automatic upgrade.',
             );
-            warn('Try one of:');
-            warn('  brew upgrade counselors');
-            warn('  npm install -g counselors@latest');
-            warn('  pnpm add -g counselors@latest');
-            warn('  yarn global add counselors@latest');
-            warn(
-              '  curl -fsSL https://github.com/aarondfrancis/counselors/raw/main/install.sh | bash',
-            );
-            warn(
-              'If this is a standalone install in a non-standard location, re-run with --force.',
-            );
+            printManualUpgradeGuidance();
+            warn(FORCE_NOTE);
             return;
           }
 
@@ -90,18 +100,9 @@ export function registerUpgradeCommand(program: Command): void {
           if (detection.binaryPath) {
             warn(`Detected counselors binary at: ${detection.binaryPath}`);
           }
-          warn('Try one of:');
-          warn('  brew upgrade counselors');
-          warn('  npm install -g counselors@latest');
-          warn('  pnpm add -g counselors@latest');
-          warn('  yarn global add counselors@latest');
-          warn(
-            '  curl -fsSL https://github.com/aarondfrancis/counselors/raw/main/install.sh | bash',
-          );
+          printManualUpgradeGuidance();
           warn('');
-          warn(
-            'If this is a standalone install in a non-standard location, re-run with --force.',
-          );
+          warn(FORCE_NOTE);
           process.exitCode = 1;
           return;
         }

@@ -1,5 +1,13 @@
 import { execSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -24,10 +32,12 @@ describe('CLI', () => {
     const output = run('--help');
     expect(output).toContain('counselors');
     expect(output).toContain('run');
+    expect(output).toContain('cleanup');
     expect(output).toContain('doctor');
     expect(output).toContain('init');
     expect(output).toContain('upgrade');
     expect(output).toContain('tools');
+    expect(output).toContain('groups');
   });
 
   it('shows version', () => {
@@ -66,6 +76,7 @@ describe('CLI', () => {
     const output = run('run --help');
     expect(output).toContain('--file');
     expect(output).toContain('--tools');
+    expect(output).toContain('--group');
     expect(output).toContain('--dry-run');
     expect(output).toContain('--read-only');
   });
@@ -164,6 +175,268 @@ describe('CLI', () => {
     expect(output).toContain('counselors skill');
   });
 
+  it('skill output mentions groups', () => {
+    const output = run('skill');
+    expect(output).toContain('counselors groups ls');
+    expect(output).toContain('--group');
+  });
+
+  it('groups add/list/remove works', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      const configPath = join(configDir, 'config.json');
+      writeFileSync(
+        configPath,
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: {},
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      run('groups add smart --tools claude', { env: { XDG_CONFIG_HOME: xdg } });
+
+      const listOutput = run('groups list', { env: { XDG_CONFIG_HOME: xdg } });
+      expect(listOutput).toContain('smart');
+      expect(listOutput).toContain('claude');
+
+      const saved = JSON.parse(readFileSync(configPath, 'utf-8'));
+      expect(saved.groups.smart).toEqual(['claude']);
+
+      run('groups remove smart', { env: { XDG_CONFIG_HOME: xdg } });
+      const savedAfter = JSON.parse(readFileSync(configPath, 'utf-8'));
+      expect(savedAfter.groups.smart).toBeUndefined();
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('groups add errors when tool is missing', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: {},
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('groups add smart --tools missing', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+      expect(output).toContain('Tool "missing" is not configured');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('groups remove errors when group does not exist', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: {},
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('groups remove missing', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+      expect(output).toContain('Group "missing" is not configured');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('run --dry-run supports --group expansion', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+              codex: {
+                binary: '/usr/bin/codex',
+                adapter: 'codex',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: { smart: ['claude', 'codex'] },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('run --dry-run --group smart "test"', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+
+      expect(output).toContain('claude');
+      expect(output).toContain('codex');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('run --group errors when group does not exist', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: {},
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('run --dry-run --group missing "test"', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+      expect(output).toContain('Group "missing" is not configured');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('run --group errors when group references missing tool', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: { smart: ['missing'] },
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('run --dry-run --group smart "test"', {
+        env: { XDG_CONFIG_HOME: xdg },
+      });
+      expect(output).toContain('references tool "missing"');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
   it('ls is alias for tools list', () => {
     const output = run('ls', {
       env: { XDG_CONFIG_HOME: '/tmp/counselors-test-nonexistent' },
@@ -180,5 +453,52 @@ describe('CLI', () => {
   it('upgrade --dry-run does not error', () => {
     const output = run('upgrade --dry-run');
     expect(output).toContain('Dry run');
+  });
+
+  it('cleanup deletes old output directories by default (older than 1 day)', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+
+      const outDir = join(xdg, 'out');
+      mkdirSync(outDir, { recursive: true });
+
+      const oldRun = join(outDir, 'old-run');
+      const newRun = join(outDir, 'new-run');
+      mkdirSync(oldRun, { recursive: true });
+      mkdirSync(newRun, { recursive: true });
+
+      const now = Date.now();
+      const twoDaysAgo = new Date(now - 2 * 24 * 60 * 60 * 1000);
+      utimesSync(oldRun, twoDaysAgo, twoDaysAgo);
+
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: outDir,
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {},
+            groups: {},
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('cleanup --yes', { env: { XDG_CONFIG_HOME: xdg } });
+      expect(output).toContain('Deleted 1 directory');
+      expect(existsSync(oldRun)).toBe(false);
+      expect(existsSync(newRun)).toBe(true);
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
   });
 });

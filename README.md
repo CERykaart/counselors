@@ -85,6 +85,7 @@ counselors run -t claude-opus,claude-opus,claude-opus "Review this"  # Run the s
 |------|-------------|
 | `-f, --file <path>` | Use a prompt file (no wrapping) |
 | `-t, --tools <list>` | Comma-separated tool IDs |
+| `-g, --group <names>` | Comma-separated group name(s) (expands to tool IDs) |
 | `--context <paths>` | Gather context from paths (comma-separated, or `.` for git diff) |
 | `--read-only <level>` | `strict`, `best-effort`, `off` (defaults to config `readOnly`) |
 | `--dry-run` | Show what would run without executing |
@@ -126,6 +127,16 @@ counselors upgrade --dry-run      # Show what would run
 counselors upgrade --force        # Force standalone self-upgrade outside safe locations
 ```
 
+### `cleanup`
+
+Delete run output directories older than a given age. Defaults to older than 1 day and uses your configured output directory (`defaults.outputDir`).
+
+```bash
+counselors cleanup
+counselors cleanup --dry-run --older-than 7d
+counselors cleanup --older-than 36h --yes
+```
+
 ### `tools`
 
 Manage configured tools.
@@ -138,6 +149,16 @@ Manage configured tools.
 | `tools rename <old> <new>` | Rename a tool ID |
 | `tools list` / `ls` | List configured tools (`-v` for full config) |
 | `tools test [tools...]` | Test tools with a quick "reply OK" prompt |
+
+### `groups`
+
+Manage predefined groups of tool IDs for easier reuse.
+
+```bash
+counselors groups list
+counselors groups add smart --tools claude-opus,codex-5.3-high
+counselors groups remove smart
+```
 
 ### `agent`
 
@@ -235,10 +256,10 @@ The `--read-only` flag on `run` controls the policy: `strict` only dispatches to
 
 ## Output structure
 
-Each run creates a timestamped directory:
+Each run creates a directory under your configured output directory (`defaults.outputDir`, default `./agents/counselors`):
 
 ```
-./agents/counselors/{slug}/
+<outputDir>/{slug}/
   prompt.md              # The dispatched prompt
   run.json               # Manifest with status, timing, costs
   summary.md             # Synthesized summary

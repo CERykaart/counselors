@@ -37,15 +37,16 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
 
 ## Phase 2: Agent Selection
 
-1. **Discover available agents** by running via Bash:
+1. **Discover available agents and groups** by running via Bash:
    \`\`\`bash
    counselors ls
+   counselors groups ls
    \`\`\`
-   This lists all configured agents with their IDs and binaries.
+   The first command lists all configured agents with their IDs and binaries. The second lists any configured **groups** (predefined sets of tool IDs).
 
-2. **MANDATORY: Print the full agent list, then ask the user which to use.**
+2. **MANDATORY: Print the full agent list and group list, then ask the user which to use.**
 
-   **Always print the full \`counselors ls\` output as inline text** (not inside AskUserQuestion). Just show the raw output from the command so the user sees every agent with its ID and binary. Do NOT reformat or abbreviate it.
+   **Always print the full \`counselors ls\` output and \`counselors groups ls\` output as inline text** (not inside AskUserQuestion). Just show the raw output so the user sees every tool/group. Do NOT reformat or abbreviate it.
 
    Then ask the user to pick:
 
@@ -56,7 +57,7 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
    - Option 2-4: The first 3 individual agents by ID
    - The user can always select "Other" to type a comma-separated list of agent IDs from the printed list above
 
-   Do NOT combine agents into preset groups (e.g. "claude + codex + gemini"). Each option must be a single agent or "All".
+   If groups exist, you MAY offer group options (e.g. "Group: smart"), but you MUST expand them to the underlying tool IDs and confirm that expanded list with the user before dispatch. This avoids silently omitting or adding agents.
 
 3. Wait for the user's selection before proceeding.
 
@@ -74,15 +75,16 @@ Be selective — don't dump the entire codebase. Pick the most relevant code sec
    - "review the auth flow" → \`auth-flow-review\`
    - "is this migration safe" → \`migration-safety-review\`
 
-2. **Create the output directory** via Bash inside \`agents/counselors/\` in your current working directory. The directory name MUST always be prefixed with a UNIX timestamp (seconds) so runs are lexically sortable and never collide:
+2. **Create the output directory** via Bash inside your project's counselors output directory (default: \`agents/counselors/\`) in your current working directory. The directory name MUST always be prefixed with a UNIX timestamp (seconds) so runs are lexically sortable and never collide:
    \`\`\`
-   <cwd>/agents/counselors/TIMESTAMP-[slug]
+   <cwd>/<outputDir>/TIMESTAMP-[slug]
    \`\`\`
+   By default, \`<outputDir>\` is \`agents/counselors\`, but users can customize it via config (\`defaults.outputDir\`) or the \`counselors run -o <dir>\` flag.
    For example, if your cwd is \`/Users/me/project\`: \`/Users/me/project/agents/counselors/1770676882-auth-flow-review\`
 
-3. **Write the prompt file** using the Write tool to the directory you just created — \`<cwd>/agents/counselors/TIMESTAMP-[slug]/prompt.md\`. Use an absolute path based on your current working directory, NOT a relative path.
+3. **Write the prompt file** using the Write tool to the directory you just created — \`<cwd>/<outputDir>/TIMESTAMP-[slug]/prompt.md\`. Use an absolute path based on your current working directory, NOT a relative path.
 
-   **IMPORTANT:** Do NOT write the prompt file to \`/tmp\`, \`~/tmp\`, or any temporary directory outside the project. Counselor agents are sandboxed to the project directory and will not have access to files outside it. The file MUST be inside the \`agents/counselors/\` directory you just created.
+   **IMPORTANT:** Do NOT write the prompt file to \`/tmp\`, \`~/tmp\`, or any temporary directory outside the project. Counselor agents are sandboxed to the project directory and will not have access to files outside it. The file MUST be inside the \`<outputDir>\` directory you just created.
 
 \`\`\`markdown
 # Review Request
@@ -117,10 +119,13 @@ You are providing an independent review. Be critical and thorough.
 Run counselors via Bash with the prompt file (using the absolute path from Phase 3), passing the user's selected agents:
 
 \`\`\`bash
-counselors run -f <cwd>/agents/counselors/TIMESTAMP-[slug]/prompt.md --tools [comma-separated-selections] --json
+counselors run -f <cwd>/<outputDir>/TIMESTAMP-[slug]/prompt.md --tools [comma-separated-tool-ids] --json
 \`\`\`
 
-Example: \`--tools claude,codex,gemini\`
+Examples:
+- \`--tools claude,codex,gemini\`
+- \`--group smart\` (uses the configured group)
+- \`--group smart --tools codex\` (group plus explicit tools)
 
 Use \`timeout: 600000\` (10 minutes). Counselors dispatches to the selected agents in parallel and writes results to the output directory shown in the JSON output.
 

@@ -9,11 +9,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
+  addGroupToConfig,
   addToolToConfig,
+  getConfiguredGroups,
   getConfiguredTools,
   loadConfig,
   loadProjectConfig,
   mergeConfigs,
+  removeGroupFromConfig,
   removeToolFromConfig,
   renameToolInConfig,
   saveConfig,
@@ -38,6 +41,7 @@ describe('loadConfig', () => {
     expect(config.defaults.timeout).toBe(540);
     expect(config.defaults.maxParallel).toBe(4);
     expect(Object.keys(config.tools)).toHaveLength(0);
+    expect(Object.keys(config.groups)).toHaveLength(0);
   });
 
   it('loads valid config file', () => {
@@ -56,6 +60,9 @@ describe('loadConfig', () => {
           readOnly: { level: 'enforced' },
         },
       },
+      groups: {
+        smart: ['claude'],
+      },
     };
     writeFileSync(testConfigFile, JSON.stringify(validConfig));
     const config = loadConfig(testConfigFile);
@@ -63,6 +70,29 @@ describe('loadConfig', () => {
     expect(config.defaults.timeout).toBe(300);
     expect(config.tools.claude).toBeDefined();
     expect(config.tools.claude.binary).toBe('/usr/bin/claude');
+    expect(config.groups.smart).toEqual(['claude']);
+  });
+
+  it('defaults groups when missing from config file', () => {
+    const legacyConfig = {
+      version: 1,
+      defaults: {
+        timeout: 300,
+        outputDir: './out',
+        readOnly: 'enforced',
+        maxContextKb: 100,
+        maxParallel: 2,
+      },
+      tools: {
+        claude: {
+          binary: '/usr/bin/claude',
+          readOnly: { level: 'enforced' },
+        },
+      },
+    };
+    writeFileSync(testConfigFile, JSON.stringify(legacyConfig));
+    const config = loadConfig(testConfigFile);
+    expect(config.groups).toEqual({});
   });
 
   it('throws on invalid config', () => {
@@ -83,6 +113,7 @@ describe('saveConfig', () => {
         maxParallel: 4,
       },
       tools: {},
+      groups: {},
     };
     saveConfig(config, testConfigFile);
     expect(existsSync(testConfigFile)).toBe(true);
@@ -103,6 +134,7 @@ describe('saveConfig', () => {
         maxParallel: 4,
       },
       tools: {},
+      groups: {},
     };
     saveConfig(config, testConfigFile);
     const mode = statSync(testConfigFile).mode & 0o777;
@@ -127,6 +159,9 @@ describe('mergeConfigs', () => {
           readOnly: { level: 'enforced' },
         },
       },
+      groups: {
+        smart: ['claude'],
+      },
     };
     const project = {
       defaults: { timeout: 300 },
@@ -135,6 +170,7 @@ describe('mergeConfigs', () => {
     expect(merged.defaults.timeout).toBe(300);
     expect(merged.defaults.maxParallel).toBe(4); // from global
     expect(merged.tools.claude).toBeDefined();
+    expect(merged.groups.smart).toEqual(['claude']);
   });
 
   it('ignores tools from project config', () => {
@@ -153,6 +189,7 @@ describe('mergeConfigs', () => {
           readOnly: { level: 'enforced' },
         },
       },
+      groups: {},
     };
     // Even if somehow a project config had tools, they should not be merged
     const project = { defaults: { timeout: 300 } };
@@ -172,6 +209,7 @@ describe('mergeConfigs', () => {
         maxParallel: 4,
       },
       tools: {},
+      groups: {},
     };
     const project = { defaults: { readOnly: 'none' as const } };
     const merged = mergeConfigs(global, project);
@@ -190,6 +228,7 @@ describe('mergeConfigs', () => {
         maxParallel: 4,
       },
       tools: {},
+      groups: {},
     };
     const project = { defaults: { readOnly: 'enforced' as const } };
     const merged = mergeConfigs(global, project);
@@ -208,6 +247,7 @@ describe('mergeConfigs', () => {
         maxParallel: 4,
       },
       tools: {},
+      groups: {},
     };
     const merged = mergeConfigs(global, null, { readOnly: 'none' });
     // CLI flags represent explicit user intent, so they override everything
@@ -225,6 +265,7 @@ describe('mergeConfigs', () => {
         maxParallel: 4,
       },
       tools: {},
+      groups: {},
     };
     const merged = mergeConfigs(global, null, { timeout: 60 });
     expect(merged.defaults.timeout).toBe(60);
@@ -295,6 +336,7 @@ describe('loadProjectConfig', () => {
         maxParallel: 8,
       },
       tools: {},
+      groups: {},
     };
 
     const merged = mergeConfigs(global, project);
@@ -368,6 +410,7 @@ describe('addToolToConfig / removeToolFromConfig', () => {
         maxParallel: 4,
       },
       tools: {},
+      groups: {},
     };
 
     const tool: ToolConfig = {
@@ -382,6 +425,27 @@ describe('addToolToConfig / removeToolFromConfig', () => {
     config = removeToolFromConfig(config, 'test-tool');
     expect(config.tools['test-tool']).toBeUndefined();
     expect(getConfiguredTools(config)).not.toContain('test-tool');
+  });
+
+  it('removes tool references from groups', () => {
+    const config: Config = {
+      version: 1,
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {
+        a: { binary: '/bin/a', readOnly: { level: 'enforced' } },
+        b: { binary: '/bin/b', readOnly: { level: 'enforced' } },
+      },
+      groups: { smart: ['a', 'a', 'b'] },
+    };
+
+    const updated = removeToolFromConfig(config, 'a');
+    expect(updated.groups.smart).toEqual(['b']);
   });
 });
 
@@ -401,12 +465,18 @@ describe('renameToolInConfig', () => {
       maxParallel: 4,
     },
     tools: { 'old-name': baseTool },
+    groups: { smart: ['old-name', 'old-name'] },
   };
 
   it('moves tool config to new key', () => {
     const updated = renameToolInConfig(baseConfig, 'old-name', 'new-name');
     expect(updated.tools['new-name']).toBeDefined();
     expect(updated.tools['old-name']).toBeUndefined();
+  });
+
+  it('updates group references', () => {
+    const updated = renameToolInConfig(baseConfig, 'old-name', 'new-name');
+    expect(updated.groups.smart).toEqual(['new-name', 'new-name']);
   });
 
   it('preserves all tool settings', () => {
@@ -429,5 +499,32 @@ describe('renameToolInConfig', () => {
     const updated = renameToolInConfig(baseConfig, 'old-name', 'new-name');
     expect(baseConfig.tools['old-name']).toBeDefined();
     expect(updated).not.toBe(baseConfig);
+  });
+});
+
+describe('addGroupToConfig / removeGroupFromConfig', () => {
+  it('adds and removes groups', () => {
+    const config: Config = {
+      version: 1,
+      defaults: {
+        timeout: 540,
+        outputDir: './agents/counselors',
+        readOnly: 'bestEffort',
+        maxContextKb: 50,
+        maxParallel: 4,
+      },
+      tools: {
+        claude: { binary: '/bin/claude', readOnly: { level: 'enforced' } },
+      },
+      groups: {},
+    };
+
+    const withGroup = addGroupToConfig(config, 'smart', ['claude', 'claude']);
+    expect(withGroup.groups.smart).toEqual(['claude', 'claude']);
+    expect(getConfiguredGroups(withGroup)).toContain('smart');
+
+    const removed = removeGroupFromConfig(withGroup, 'smart');
+    expect(removed.groups.smart).toBeUndefined();
+    expect(getConfiguredGroups(removed)).not.toContain('smart');
   });
 });

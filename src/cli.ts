@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import { registerAgentCommand } from './commands/agent.js';
+import { registerCleanupCommand } from './commands/cleanup.js';
 import { registerDoctorCommand } from './commands/doctor.js';
+import { registerGroupAddCommand } from './commands/groups/add.js';
+import { registerGroupListCommand } from './commands/groups/list.js';
+import { registerGroupRemoveCommand } from './commands/groups/remove.js';
 import { registerInitCommand } from './commands/init.js';
 import { registerRunCommand } from './commands/run.js';
 import { registerSkillCommand } from './commands/skill.js';
@@ -22,6 +26,7 @@ program
 
 // Top-level commands
 registerRunCommand(program);
+registerCleanupCommand(program);
 registerDoctorCommand(program);
 registerInitCommand(program);
 registerAgentCommand(program);
@@ -39,6 +44,15 @@ registerRemoveCommand(tools);
 registerRenameCommand(tools);
 registerListCommand(tools);
 registerTestCommand(tools);
+
+// Groups subcommand group
+const groups = program
+  .command('groups')
+  .description('Manage predefined tool groups');
+
+registerGroupListCommand(groups);
+registerGroupAddCommand(groups);
+registerGroupRemoveCommand(groups);
 
 // Top-level aliases
 program

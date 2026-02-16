@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-02-16
+
 ### Fixed
 - Gemini 3 models now use the correct `-preview` suffixed API model IDs (`gemini-3-pro-preview`, `gemini-3-flash-preview`), fixing `ModelNotFoundError` when running tools
+
 
 ## [0.4.5] - 2026-02-16
 
@@ -130,7 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow accepts leading `v` in version input
 
 
-[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.5...HEAD
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.6...HEAD
 [0.3.0]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.0
 [0.3.1]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.1
 [0.3.2]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.2
@@ -142,3 +145,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.3]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.3
 [0.4.4]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.4
 [0.4.5]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.5
+[0.4.6]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.6

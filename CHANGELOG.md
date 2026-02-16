@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.10] - 2026-02-16
+
 ### Changed
 - `tools add` custom model flow now asks for a model identifier instead of raw CLI flags, and constructs the correct flags automatically per adapter
 
 ### Fixed
 - Gemini CLI with Vertex AI auth now works — `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` are passed to subprocesses (#13)
+
 
 ## [0.4.9] - 2026-02-16
 
@@ -163,7 +166,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release workflow accepts leading `v` in version input
 
 
-[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.9...HEAD
+[Unreleased]: https://github.com/aarondfrancis/counselors/compare/v0.4.10...HEAD
 [0.3.0]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.0
 [0.3.1]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.1
 [0.3.2]: https://github.com/aarondfrancis/counselors/releases/tag/v0.3.2
@@ -179,3 +182,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.4.7]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.7
 [0.4.8]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.8
 [0.4.9]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.9
+[0.4.10]: https://github.com/aarondfrancis/counselors/releases/tag/v0.4.10

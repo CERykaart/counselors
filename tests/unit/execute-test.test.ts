@@ -108,6 +108,50 @@ describe('executeTest', () => {
     expect(capturedReq.extraFlags).toEqual(['--model', 'opus']);
   });
 
+  it('returns command string for argument-based adapters', async () => {
+    const result = await executeTest(fakeAdapter, fakeToolConfig);
+    expect(result.command).toBeDefined();
+    expect(result.command).toContain('node');
+    expect(result.command).not.toContain('echo');
+  });
+
+  it('returns command string with echo pipe for stdin-based adapters', async () => {
+    const stdinAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      id: 'stdin-cmd',
+      buildInvocation: (req) => ({
+        cmd: 'node',
+        args: [
+          '-e',
+          'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>process.stdout.write(d))',
+        ],
+        stdin: 'original',
+        cwd: req.cwd,
+      }),
+    };
+
+    const result = await executeTest(stdinAdapter, fakeToolConfig);
+    expect(result.command).toBeDefined();
+    expect(result.command).toMatch(/^echo .+ \| node /);
+  });
+
+  it('quotes args with special characters in command string', async () => {
+    // executeTest replaces the last arg with the test prompt, so we need
+    // an arg before it that contains special characters to verify quoting.
+    const spaceAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      buildInvocation: (req) => ({
+        cmd: 'node',
+        args: ['-e', 'process.stdout.write("OK")', 'placeholder'],
+        cwd: req.cwd,
+      }),
+    };
+
+    const result = await executeTest(spaceAdapter, fakeToolConfig);
+    // The -e script has parens and quotes, so it should be single-quoted
+    expect(result.command).toContain("'process.stdout.write(");
+  });
+
   it('passes binary from toolConfig to adapter', async () => {
     const configWithBinary: ToolConfig = {
       ...fakeToolConfig,

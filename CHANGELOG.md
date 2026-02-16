@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `counselors config` command — prints the config file path and the full resolved configuration as JSON
 - `counselors tools test` now prints the exact shell command used for each tool, so users can reproduce tests manually
 
+### Fixed
+- `counselors tools add <tool>` now defaults to a model-specific name (e.g. `gemini-3-pro`) instead of just the adapter name (e.g. `gemini`)
+
 ## [0.4.6] - 2026-02-16
 
 ### Fixed

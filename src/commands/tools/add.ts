@@ -117,8 +117,11 @@ async function addBuiltInTool(
   const selectedModel = await selectModelDetails(toolId, adapter.models);
 
   // Pick a name for this tool config
+  const fallbackName = selectedModel.id.startsWith(`${toolId}-`)
+    ? selectedModel.id
+    : `${toolId}-${selectedModel.id}`;
   const defaultName =
-    nameOverride ?? selectedModel.compoundId ?? `${toolId}-${selectedModel.id}`;
+    nameOverride ?? selectedModel.compoundId ?? fallbackName;
   let name = nameOverride ?? (await promptInput('Tool name:', defaultName));
 
   if (!SAFE_ID_RE.test(name)) {
@@ -320,7 +323,7 @@ export function registerAddCommand(program: Command): void {
 
       // Direct add (original flow)
       if (isBuiltInTool(toolId)) {
-        await addBuiltInTool(toolId, config, toolId);
+        await addBuiltInTool(toolId, config);
       } else {
         await collectCustomConfig(config, toolId);
       }

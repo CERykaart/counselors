@@ -33,6 +33,7 @@ describe('CLI', () => {
     expect(output).toContain('counselors');
     expect(output).toContain('run');
     expect(output).toContain('cleanup');
+    expect(output).toContain('config');
     expect(output).toContain('doctor');
     expect(output).toContain('init');
     expect(output).toContain('upgrade');
@@ -435,6 +436,55 @@ describe('CLI', () => {
     } finally {
       rmSync(xdg, { recursive: true, force: true });
     }
+  });
+
+  it('config prints path and JSON', () => {
+    const xdg = mkdtempSync(join(tmpdir(), 'counselors-test-'));
+    try {
+      const configDir = join(xdg, 'counselors');
+      mkdirSync(configDir, { recursive: true });
+      writeFileSync(
+        join(configDir, 'config.json'),
+        `${JSON.stringify(
+          {
+            version: 1,
+            defaults: {
+              timeout: 540,
+              outputDir: './agents/counselors',
+              readOnly: 'bestEffort',
+              maxContextKb: 50,
+              maxParallel: 4,
+            },
+            tools: {
+              claude: {
+                binary: '/usr/bin/claude',
+                adapter: 'claude',
+                readOnly: { level: 'enforced' },
+              },
+            },
+            groups: {},
+          },
+          null,
+          2,
+        )}\n`,
+      );
+
+      const output = run('config', { env: { XDG_CONFIG_HOME: xdg } });
+      expect(output).toContain('Config file:');
+      expect(output).toContain(join(configDir, 'config.json'));
+      expect(output).toContain('"version": 1');
+      expect(output).toContain('"claude"');
+    } finally {
+      rmSync(xdg, { recursive: true, force: true });
+    }
+  });
+
+  it('config works with no config file', () => {
+    const output = run('config', {
+      env: { XDG_CONFIG_HOME: '/tmp/counselors-test-nonexistent' },
+    });
+    expect(output).toContain('Config file:');
+    expect(output).toContain('"version": 1');
   });
 
   it('ls is alias for tools list', () => {

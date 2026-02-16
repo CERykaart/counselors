@@ -139,6 +139,7 @@ export interface TestResult {
   output: string;
   error?: string;
   durationMs: number;
+  command?: string;
 }
 
 // ── Run manifest ──

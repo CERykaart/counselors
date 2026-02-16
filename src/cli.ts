@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { registerAgentCommand } from './commands/agent.js';
 import { registerCleanupCommand } from './commands/cleanup.js';
+import { registerConfigCommand } from './commands/config.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerGroupAddCommand } from './commands/groups/add.js';
 import { registerGroupListCommand } from './commands/groups/list.js';
@@ -27,6 +28,7 @@ program
 // Top-level commands
 registerRunCommand(program);
 registerCleanupCommand(program);
+registerConfigCommand(program);
 registerDoctorCommand(program);
 registerInitCommand(program);
 registerAgentCommand(program);

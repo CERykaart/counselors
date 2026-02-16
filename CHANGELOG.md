@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `counselors config` command — prints the config file path and the full resolved configuration as JSON
+- `counselors tools test` now prints the exact shell command used for each tool, so users can reproduce tests manually
+
 ## [0.4.6] - 2026-02-16
 
 ### Fixed

@@ -106,6 +106,9 @@ export function formatTestResults(results: TestResult[]): string {
   for (const r of results) {
     const icon = r.passed ? '✓' : '✗';
     lines.push(`  ${icon} ${r.toolId} (${r.durationMs}ms)`);
+    if (r.command) {
+      lines.push(`    $ ${r.command}`);
+    }
     if (!r.passed && r.error) {
       lines.push(`    Error: ${r.error}`);
     }

@@ -347,6 +347,15 @@ export async function executeTest(
     invocation.args[lastArgIdx] = prompt;
   }
 
+  // Build a shell-friendly command string for display
+  const quote = (s: string) =>
+    /[^a-zA-Z0-9_./:=@-]/.test(s) ? `'${s.replace(/'/g, "'\\''")}'` : s;
+  const cmdStr = [invocation.cmd, ...invocation.args].map(quote).join(' ');
+  const command =
+    invocation.stdin != null
+      ? `echo ${quote(invocation.stdin)} | ${cmdStr}`
+      : cmdStr;
+
   const result = await execute(invocation, TEST_TIMEOUT);
 
   const passed = result.stdout.includes('OK');
@@ -358,5 +367,6 @@ export async function executeTest(
       ? result.stderr.slice(0, 500) || 'Output did not contain "OK"'
       : undefined,
     durationMs: Date.now() - start,
+    command,
   };
 }

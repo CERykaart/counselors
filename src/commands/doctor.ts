@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import type { Command } from 'commander';
 import { resolveAdapter } from '../adapters/index.js';
 import {
@@ -8,6 +9,7 @@ import {
 } from '../constants.js';
 import { loadConfig } from '../core/config.js';
 import { findBinary, getBinaryVersion } from '../core/discovery.js';
+import { detectInstallation } from '../core/upgrade.js';
 import type { DoctorCheck } from '../types.js';
 import { info } from '../ui/logger.js';
 import { formatDoctorResults } from '../ui/output.js';
@@ -166,6 +168,28 @@ export function registerDoctorCommand(program: Command): void {
             message: `${members.length} tool(s)`,
           });
         }
+      }
+
+      // Check for multiple installations
+      const detection = detectInstallation();
+      const sources: string[] = [];
+      if (detection.brewVersion) sources.push('homebrew');
+      if (detection.npmVersion) sources.push('npm');
+      // Check standalone paths independently of the detected method
+      const home = process.env.HOME ?? '';
+      const standalonePaths = [
+        join(home, '.local', 'bin', 'counselors'),
+        join(home, 'bin', 'counselors'),
+      ];
+      const hasStandalone =
+        home && standalonePaths.some((p) => existsSync(p));
+      if (hasStandalone) sources.push('standalone');
+      if (sources.length > 1) {
+        checks.push({
+          name: 'Multiple installations',
+          status: 'warn',
+          message: `Found counselors via ${sources.join(', ')}. This may cause version conflicts.`,
+        });
       }
 
       info(formatDoctorResults(checks));

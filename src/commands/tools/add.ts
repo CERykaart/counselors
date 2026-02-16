@@ -5,14 +5,16 @@ import {
   getAdapter,
   getAllBuiltInAdapters,
   isBuiltInTool,
+  resolveAdapter,
 } from '../../adapters/index.js';
-import { SAFE_ID_RE } from '../../constants.js';
+import { SAFE_ID_RE, sanitizeId } from '../../constants.js';
 import { copyAmpSettings } from '../../core/amp-utils.js';
 import { addToolToConfig, loadConfig, saveConfig } from '../../core/config.js';
 import { discoverTool, findBinary } from '../../core/discovery.js';
+import { executeTest } from '../../core/executor.js';
 import type { ReadOnlyLevel, ToolConfig } from '../../types.js';
 import { error, info, success, warn } from '../../ui/logger.js';
-import { createSpinner } from '../../ui/output.js';
+import { createSpinner, formatTestResults } from '../../ui/output.js';
 import {
   confirmAction,
   confirmOverwrite,
@@ -116,11 +118,31 @@ async function addBuiltInTool(
 
   const selectedModel = await selectModelDetails(toolId, adapter.models);
 
-  // Pick a name for this tool config
-  const fallbackName = selectedModel.id.startsWith(`${toolId}-`)
-    ? selectedModel.id
-    : `${toolId}-${selectedModel.id}`;
-  const defaultName = nameOverride ?? selectedModel.compoundId ?? fallbackName;
+  let extraFlags: string[] | undefined;
+  let defaultName: string;
+
+  if (selectedModel.id === '__custom__') {
+    const modelId = await promptInput('Model identifier:');
+    if (!modelId.trim()) {
+      error('No model identifier provided.');
+      process.exitCode = 1;
+      return;
+    }
+
+    const extraInput = await promptInput('Extra flags (optional, space-separated):');
+    const parsedExtra = extraInput.trim() ? extraInput.trim().split(/\s+/) : [];
+    extraFlags = [adapter.modelFlag ?? '-m', modelId.trim(), ...parsedExtra];
+
+    defaultName = nameOverride ?? `${toolId}-${sanitizeId(modelId.trim())}`;
+  } else {
+    extraFlags = selectedModel.extraFlags;
+    const fallbackName = selectedModel.id.startsWith(`${toolId}-`)
+      ? selectedModel.id
+      : `${toolId}-${selectedModel.id}`;
+    defaultName =
+      nameOverride ?? selectedModel.compoundId ?? fallbackName;
+  }
+
   let name = nameOverride ?? (await promptInput('Tool name:', defaultName));
 
   if (!SAFE_ID_RE.test(name)) {
@@ -156,9 +178,7 @@ async function addBuiltInTool(
     binary: discovery.path!,
     readOnly: { level: adapter.readOnly.level },
     adapter: toolId,
-    ...(selectedModel.extraFlags
-      ? { extraFlags: selectedModel.extraFlags }
-      : {}),
+    ...(extraFlags ? { extraFlags } : {}),
   };
 
   const updated = addToolToConfig(config, name, toolConfig);
@@ -167,6 +187,19 @@ async function addBuiltInTool(
     copyAmpSettings();
   }
   success(`Added "${name}" to config.`);
+
+  // For custom models, immediately test to verify the flags work
+  if (selectedModel.id === '__custom__') {
+    info('Testing tool configuration...');
+    const testAdapter = resolveAdapter(name, toolConfig);
+    const result = await executeTest(testAdapter, toolConfig, name);
+    info(formatTestResults([result]));
+    if (!result.passed) {
+      warn(
+        'The tool was saved to your config but the test failed. You may need to check your API access or flags.',
+      );
+    }
+  }
 }
 
 async function collectCustomConfig(

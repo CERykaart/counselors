@@ -20,6 +20,7 @@ describe('CodexAdapter', () => {
     expect(adapter.id).toBe('codex');
     expect(adapter.commands).toEqual(['codex']);
     expect(adapter.readOnly.level).toBe('enforced');
+    expect(adapter.modelFlag).toBe('-m');
   });
 
   it('builds invocation with sandbox flag', () => {

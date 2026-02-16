@@ -14,6 +14,7 @@ export abstract class BaseAdapter implements ToolAdapter {
   abstract commands: string[];
   abstract installUrl: string;
   abstract readOnly: { level: ReadOnlyLevel };
+  modelFlag = '-m';
   abstract models: { id: string; name: string; recommended?: boolean }[];
 
   abstract buildInvocation(req: RunRequest): Invocation;

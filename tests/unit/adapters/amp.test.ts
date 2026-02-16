@@ -33,6 +33,7 @@ describe('AmpAdapter', () => {
   it('has correct metadata', () => {
     expect(adapter.id).toBe('amp');
     expect(adapter.readOnly.level).toBe('enforced');
+    expect(adapter.modelFlag).toBe('-m');
   });
 
   it('uses stdin for prompt delivery', () => {

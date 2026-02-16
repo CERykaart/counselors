@@ -358,7 +358,12 @@ export async function executeTest(
 
   const result = await execute(invocation, TEST_TIMEOUT);
 
-  const passed = result.exitCode === 0 && result.stdout.includes('OK');
+  // Some CLIs (e.g. Codex) echo the prompt back as "User instructions: ..."
+  // in their log output. If we see that, it means stdout contains CLI logging
+  // rather than a clean model response — the "OK" match would be a false positive.
+  const echoedPrompt = result.stdout.includes('User instructions');
+  const passed =
+    result.exitCode === 0 && result.stdout.includes('OK') && !echoedPrompt;
 
   let error: string | undefined;
   if (!passed) {
@@ -366,7 +371,11 @@ export async function executeTest(
       error = `Timed out after ${TEST_TIMEOUT / 1000}s`;
     } else if (result.exitCode !== 0) {
       error =
-        result.stderr.trim() || `Process exited with code ${result.exitCode}`;
+        result.stderr.trim() ||
+        `Process exited with code ${result.exitCode}`;
+    } else if (echoedPrompt) {
+      error =
+        'Tool echoed the prompt instead of a model response (check model access)';
     } else if (result.stderr.trim()) {
       error = result.stderr.slice(0, 500);
     } else {

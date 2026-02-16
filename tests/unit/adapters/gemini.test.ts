@@ -19,6 +19,7 @@ describe('GeminiAdapter', () => {
   it('has correct metadata', () => {
     expect(adapter.id).toBe('gemini');
     expect(adapter.readOnly.level).toBe('enforced');
+    expect(adapter.modelFlag).toBe('-m');
   });
 
   it('builds invocation with headless mode and stdin prompt', () => {

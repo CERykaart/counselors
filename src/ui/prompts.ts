@@ -15,10 +15,16 @@ export async function selectModelDetails(
     value: String(i),
   }));
 
+  choices.push({ name: 'Custom model...', value: '__custom__' });
+
   const idx = await select({
     message: `Select model for ${toolId}:`,
     choices,
   });
+
+  if (idx === '__custom__') {
+    return { id: '__custom__' };
+  }
 
   const model = models[Number(idx)];
   return {

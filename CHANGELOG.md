@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `tools add` custom model flow now asks for a model identifier instead of raw CLI flags, and constructs the correct flags automatically per adapter
+
 ## [0.4.9] - 2026-02-16
 
 ### Fixed
 - Various bug fixes
-
-
 
 ## [0.4.8] - 2026-02-16
 
@@ -21,7 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `counselors tools test` now shows verbose failure details: timeout detection, stderr content, and actual tool output
-
 
 ## [0.4.7] - 2026-02-16
 

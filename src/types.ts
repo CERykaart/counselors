@@ -100,6 +100,7 @@ export interface ToolAdapter {
   commands: string[];
   installUrl: string;
   readOnly: { level: ReadOnlyLevel };
+  modelFlag?: string;
   models: {
     id: string;
     name: string;

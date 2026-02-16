@@ -234,6 +234,76 @@ describe('executeTest', () => {
     expect(result.error).toBe('model not found');
   });
 
+  it('fails when stdout contains "User instructions" even with exit code 0', async () => {
+    // Codex CLI echoes "User instructions: <prompt>" to stdout in its log
+    // output. If the model doesn't exist, it exits 0 but the "OK" in the
+    // echoed prompt is a false positive — not a real model response.
+    const echoAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      buildInvocation: (req) => ({
+        cmd: 'node',
+        args: [
+          '-e',
+          'process.stdout.write("User instructions:\\nReply with exactly: OK\\n[ERROR] model not found")',
+        ],
+        stdin: 'ignored',
+        cwd: req.cwd,
+      }),
+    };
+
+    const result = await executeTest(echoAdapter, fakeToolConfig);
+    expect(result.passed).toBe(false);
+    expect(result.error).toBe(
+      'Tool echoed the prompt instead of a model response (check model access)',
+    );
+  });
+
+  it('echoed prompt error takes priority even when OK is absent from output', async () => {
+    // "User instructions" present but "OK" isn't — echoedPrompt should
+    // still be the reported reason, not the generic "did not contain OK".
+    const echoNoOkAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      buildInvocation: (req) => ({
+        cmd: 'node',
+        args: [
+          '-e',
+          'process.stdout.write("User instructions:\\nReply with exactly: OK".replace("OK","HELLO"))',
+        ],
+        stdin: 'ignored',
+        cwd: req.cwd,
+      }),
+    };
+
+    const result = await executeTest(echoNoOkAdapter, fakeToolConfig);
+    expect(result.passed).toBe(false);
+    expect(result.error).toBe(
+      'Tool echoed the prompt instead of a model response (check model access)',
+    );
+  });
+
+  it('echoed prompt error takes priority over stderr when exit code is 0', async () => {
+    // If stdout has "User instructions" AND stderr has content, the
+    // echoedPrompt message should win since it's more specific.
+    const echoWithStderrAdapter: ToolAdapter = {
+      ...fakeAdapter,
+      buildInvocation: (req) => ({
+        cmd: 'node',
+        args: [
+          '-e',
+          'process.stderr.write("some warning"); process.stdout.write("User instructions:\\nReply with exactly: OK")',
+        ],
+        stdin: 'ignored',
+        cwd: req.cwd,
+      }),
+    };
+
+    const result = await executeTest(echoWithStderrAdapter, fakeToolConfig);
+    expect(result.passed).toBe(false);
+    expect(result.error).toBe(
+      'Tool echoed the prompt instead of a model response (check model access)',
+    );
+  });
+
   it('reports generic message when no stderr and no OK', async () => {
     // Use stdin adapter so executeTest overrides stdin instead of last arg
     const noOkAdapter: ToolAdapter = {

@@ -8,6 +8,7 @@ export class ClaudeAdapter extends BaseAdapter {
   commands = ['claude'];
   installUrl = 'https://docs.anthropic.com/en/docs/claude-code';
   readOnly = { level: 'enforced' as const };
+  modelFlag = '--model';
   models = [
     {
       id: 'opus',

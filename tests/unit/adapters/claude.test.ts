@@ -20,6 +20,7 @@ describe('ClaudeAdapter', () => {
     expect(adapter.id).toBe('claude');
     expect(adapter.commands).toEqual(['claude']);
     expect(adapter.readOnly.level).toBe('enforced');
+    expect(adapter.modelFlag).toBe('--model');
   });
 
   it('builds invocation with read-only flags', () => {

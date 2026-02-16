@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `counselors doctor` now warns when multiple installations are detected (e.g. npm + Homebrew + standalone)
+
 ## [0.4.7] - 2026-02-16
 
 ### Added

@@ -29,7 +29,8 @@ describe('GeminiAdapter', () => {
     expect(inv.args[1]).toBe('');
     expect(inv.args).toContain('-m');
     expect(inv.args).toContain('gemini-3-pro');
-    expect(inv.stdin).toBe('test prompt');
+    expect(inv.stdin).toContain('test prompt');
+    expect(inv.stdin).toContain('Do not narrate');
     expect(inv.args).toContain('--output-format');
     // No positional instruction arg
     expect(inv.args.join(' ')).not.toContain('Read the file');

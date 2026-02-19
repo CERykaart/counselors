@@ -54,10 +54,16 @@ export class GeminiAdapter extends BaseAdapter {
 
     args.push('--output-format', 'text');
 
+    // Gemini CLI includes tool-use narration ("I will read...", "I will list...")
+    // in its headless text output. Append an instruction to suppress it.
+    const prompt =
+      req.prompt +
+      '\n\nIMPORTANT: Do not narrate your tool usage, internal planning, or chain of thought. Start your response directly with your analysis. Do not prefix your response with lines like "I will read..." or "I will list...".';
+
     return {
       cmd: req.binary ?? 'gemini',
       args,
-      stdin: req.prompt,
+      stdin: prompt,
       cwd: req.cwd,
     };
   }

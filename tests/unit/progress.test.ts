@@ -159,6 +159,16 @@ describe('ProgressDisplay (non-TTY)', () => {
     expect(matches).toHaveLength(1);
   });
 
+  it('prints distinct PIDs for multiple tools', async () => {
+    const ProgressDisplay = await loadProgressDisplay();
+    const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');
+    display.start('claude', 111);
+    display.start('codex', 222);
+    display.stop();
+    expect(stderrOutput).toContain('PID 111  claude started');
+    expect(stderrOutput).toContain('PID 222  codex started');
+  });
+
   it('handles multiple tools', async () => {
     const ProgressDisplay = await loadProgressDisplay();
     const display = new ProgressDisplay(['claude', 'codex'], '/tmp/output');

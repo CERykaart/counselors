@@ -75,11 +75,11 @@ describe('TerminalReporter execution', () => {
     r.executionFinished();
   });
 
-  it('prepends ./ to relative paths', async () => {
+  it('passes through paths as-is', async () => {
     vi.useFakeTimers();
     const r = await createReporter();
-    r.executionStarted('agents/counselors/test', ['claude']);
-    expect(stderrOutput).toContain('Output: ./agents/counselors/test');
+    r.executionStarted('/abs/agents/counselors/test', ['claude']);
+    expect(stderrOutput).toContain('Output: /abs/agents/counselors/test');
     r.executionFinished();
   });
 

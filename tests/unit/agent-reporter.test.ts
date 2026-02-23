@@ -70,19 +70,10 @@ describe('AgentReporter execution', () => {
     r.executionFinished();
   });
 
-  it('prepends ./ to relative paths without leading dot', async () => {
+  it('passes through paths as-is', async () => {
     const r = await createReporter();
-    r.executionStarted('agents/counselors/test', ['claude']);
-    expect(stderrOutput).toContain('Output: ./agents/counselors/test');
-    r.executionFinished();
-  });
-
-  it('preserves paths already starting with ./', async () => {
-    const r = await createReporter();
-    r.executionStarted('./agents/counselors/test', ['claude']);
-    expect(stderrOutput).toContain('Output: ./agents/counselors/test');
-    // Should NOT double-prefix to ././
-    expect(stderrOutput).not.toContain('././');
+    r.executionStarted('/abs/agents/counselors/test', ['claude']);
+    expect(stderrOutput).toContain('Output: /abs/agents/counselors/test');
     r.executionFinished();
   });
 

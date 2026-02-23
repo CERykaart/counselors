@@ -1,4 +1,3 @@
-import { isAbsolute } from 'node:path';
 import type { RunManifest, ToolReport } from '../types.js';
 import { formatRunSummary } from './output.js';
 import type { Reporter } from './reporter.js';
@@ -58,10 +57,7 @@ export class AgentReporter implements Reporter {
   ): void {
     this.executionStart = Date.now();
     this.durationMs = opts?.durationMs;
-    const displayDir =
-      !isAbsolute(outputDir) && !outputDir.startsWith('.')
-        ? `./${outputDir}`
-        : outputDir;
+    const displayDir = outputDir;
     this.tools.clear();
     this.toolOrder = [];
     for (const id of toolIds) {

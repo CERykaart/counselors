@@ -1,5 +1,5 @@
 import { mkdirSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { MAX_SLUG_LENGTH } from '../constants.js';
 
 function secondsTimestamp(): number {
@@ -44,7 +44,7 @@ export function generateSlugFromFile(filePath: string): string {
  * Resolve output directory, appending timestamp if exists.
  */
 export function resolveOutputDir(baseDir: string, slug: string): string {
-  let outputDir = join(baseDir, slug);
+  let outputDir = resolve(join(baseDir, slug));
   try {
     mkdirSync(outputDir, { recursive: false });
   } catch (e: unknown) {

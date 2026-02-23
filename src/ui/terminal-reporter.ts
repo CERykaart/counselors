@@ -129,7 +129,7 @@ export class TerminalReporter implements Reporter {
 
   // ── Round management ──
 
-  roundStarted(round: number, totalRounds: number): void {
+  roundStarted(round: number, totalRounds: number | null): void {
     this.currentRound = round;
     this.totalRounds = totalRounds;
 
@@ -230,8 +230,12 @@ export class TerminalReporter implements Reporter {
 
   private render(): void {
     const lines: string[] = [];
-    if (this.currentRound != null && this.totalRounds != null) {
-      lines.push(`  Round ${this.currentRound}/${this.totalRounds}`);
+    if (this.currentRound != null) {
+      const roundLabel =
+        this.totalRounds != null
+          ? `${this.currentRound}/${this.totalRounds}`
+          : `${this.currentRound}`;
+      lines.push(`  Round ${roundLabel}`);
     }
     lines.push(`  ${DIM}Output: ${this.outputDir}${RESET}`);
 

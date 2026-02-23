@@ -304,8 +304,8 @@ export function registerLoopCommand(program: Command): void {
 
         // Run multi-round loop
         const runStart = Date.now();
-        const effectiveRounds =
-          rounds === Number.MAX_SAFE_INTEGER ? 999 : rounds;
+        const totalRoundsLabel =
+          rounds === Number.MAX_SAFE_INTEGER ? null : rounds;
         reporter.executionStarted(outputDir, toolIds, { durationMs });
 
         try {
@@ -317,11 +317,11 @@ export function registerLoopCommand(program: Command): void {
             outputDir,
             readOnlyPolicy,
             cwd,
-            rounds: effectiveRounds,
+            rounds,
             durationMs,
             convergenceThreshold,
             onRoundStart: (round) => {
-              reporter.roundStarted(round, effectiveRounds);
+              reporter.roundStarted(round, totalRoundsLabel);
             },
             onProgress: (event) => {
               if (event.event === 'started')

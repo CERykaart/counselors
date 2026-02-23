@@ -30,6 +30,8 @@ export interface LoopResult {
   outcome: 'completed' | 'aborted' | 'converged';
 }
 
+const MAX_PRIOR_REPORT_REFS = 24;
+
 /** Sum word counts across all tool reports in a round. */
 function totalWordCount(round: RoundManifest): number {
   return round.tools.reduce((sum, r) => sum + r.wordCount, 0);
@@ -58,6 +60,7 @@ export async function runLoop(options: LoopOptions): Promise<LoopResult> {
   const startTime = Date.now();
   const completedRounds: RoundManifest[] = [];
   let outcome: LoopResult['outcome'] = 'completed';
+  let aborted = false;
 
   // SIGINT: let the current round finish, then stop the loop.
   // Second SIGINT falls through to the executor's handler which force-exits.
@@ -65,6 +68,7 @@ export async function runLoop(options: LoopOptions): Promise<LoopResult> {
   const sigintHandler = () => {
     sigintCount++;
     if (sigintCount === 1) {
+      aborted = true;
       outcome = 'aborted';
       // Suppress the executor's auto-exit so we can write manifests
       clearSigintExit();
@@ -76,7 +80,7 @@ export async function runLoop(options: LoopOptions): Promise<LoopResult> {
   try {
     for (let round = 1; round <= maxRounds; round++) {
       // Check stop conditions before starting a new round
-      if (outcome === 'aborted') break;
+      if (aborted) break;
       if (
         durationMs != null &&
         round > 1 &&
@@ -205,12 +209,20 @@ function augmentPromptWithPriorOutputs(
   basePrompt: string,
   priorRoundReportPaths: string[],
 ): string {
-  const refs = priorRoundReportPaths.map((p) => `@${p}`).join('\n');
+  const cappedPaths = priorRoundReportPaths.slice(-MAX_PRIOR_REPORT_REFS);
+  const omittedCount = priorRoundReportPaths.length - cappedPaths.length;
+  const refs = cappedPaths.map((p) => `@${p}`).join('\n');
+  const capNote =
+    omittedCount > 0
+      ? `\nOnly the most recent ${MAX_PRIOR_REPORT_REFS} outputs are included to control prompt size (${omittedCount} older output(s) omitted).\n`
+      : '';
   return `${basePrompt}
 
 ## Prior Round Outputs
 
 The following files contain outputs from previous rounds. Use them to improve quality, not just avoid duplicates.
+
+${capNote}
 
 Round instructions:
 - Do not repeat the same finding unless you add meaningful new evidence.

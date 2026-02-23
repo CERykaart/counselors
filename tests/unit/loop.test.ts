@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -7,10 +7,16 @@ import type { Config, ToolReport } from '../../src/types.js';
 // Track dispatch calls to control per-round word counts
 let dispatchCallCount = 0;
 let wordCountsByRound: number[] = [];
+const dispatchPrompts: string[] = [];
 
 vi.mock('../../src/core/dispatcher.js', () => ({
-  dispatch: vi.fn().mockImplementation(async () => {
+  dispatch: vi.fn().mockImplementation(async (opts: { outputDir: string; promptContent: string }) => {
     const round = dispatchCallCount++;
+    dispatchPrompts.push(opts.promptContent);
+
+    // Simulate report files that later rounds can reference.
+    writeFileSync(join(opts.outputDir, 'claude.md'), `round-${round + 1}`, 'utf-8');
+
     const wordCount =
       round < wordCountsByRound.length ? wordCountsByRound[round] : 100;
     const report: ToolReport = {
@@ -78,6 +84,7 @@ beforeEach(() => {
   mkdirSync(testDir, { recursive: true });
   dispatchCallCount = 0;
   wordCountsByRound = [];
+  dispatchPrompts.length = 0;
 });
 
 afterEach(() => {
@@ -117,6 +124,15 @@ describe('runLoop', () => {
     // Only round 1 should complete — the duration check fires before round 2
     expect(result.rounds).toHaveLength(1);
     expect(result.outcome).toBe('aborted');
+  });
+
+  it('caps prior-round references to control prompt size', async () => {
+    await runLoop(baseOptions({ rounds: 30 }));
+
+    const finalPrompt = dispatchPrompts.at(-1) ?? '';
+    expect(finalPrompt).toContain('Only the most recent 24 outputs are included');
+    const refCount = (finalPrompt.match(/@.*round-\d+\/claude\.md/g) ?? []).length;
+    expect(refCount).toBe(24);
   });
 
   describe('convergence detection', () => {

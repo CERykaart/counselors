@@ -109,7 +109,7 @@ export class AgentReporter implements Reporter {
 
   // ── Round management ──
 
-  roundStarted(round: number, totalRounds: number): void {
+  roundStarted(round: number, totalRounds: number | null): void {
     if (round > 1) {
       const elapsed = Date.now() - this.executionStart;
       let timing = formatDuration(elapsed) + ' elapsed';
@@ -120,7 +120,8 @@ export class AgentReporter implements Reporter {
       timing += ' \u00b7 Ctrl+C to stop';
       this.stderr(`  ${timing}`);
     }
-    this.stderr(`  \u2500\u2500 Round ${round}/${totalRounds} \u2500\u2500`);
+    const roundLabel = totalRounds != null ? `${round}/${totalRounds}` : `${round}`;
+    this.stderr(`  \u2500\u2500 Round ${roundLabel} \u2500\u2500`);
     // Reset tool states for new round
     for (const [id] of this.tools) {
       this.tools.set(id, { toolId: id, phase: 'pending' });

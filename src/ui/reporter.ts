@@ -20,7 +20,7 @@ export interface Reporter {
   executionFinished(): void;
 
   // ── Round management (loop-only) ──
-  roundStarted(round: number, totalRounds: number): void;
+  roundStarted(round: number, totalRounds: number | null): void;
   roundCompleted(round: number): void;
   convergenceDetected(round: number, ratio: number, threshold: number): void;
 

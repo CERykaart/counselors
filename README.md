@@ -197,6 +197,24 @@ Built-ins:
 - `contracts` — mismatches between API producers and consumers
 - `hotspots` — high-impact bottlenecks, including O(n^2)+ patterns
 
+### `mkdir [prompt]`
+
+Create a counselors output directory and write `prompt.md` without dispatching.
+
+Useful when an orchestrating agent wants counselors to own output-dir creation and just return paths.
+
+```bash
+counselors mkdir "Review the auth flow for edge cases" --json
+echo "prompt" | counselors mkdir --json
+counselors mkdir -f prompt.md --json
+```
+
+The JSON output includes:
+- `outputDir`
+- `promptFilePath`
+- `slug`
+- `promptSource`
+
 ### `init`
 
 Interactive setup wizard. Discovers installed AI CLIs, lets you pick tools and models, runs validation tests.
@@ -391,7 +409,7 @@ counselors skill
 counselors agent
 ```
 
-The skill template provides a multi-phase workflow: gather context, select agents, assemble prompt, dispatch via `counselors run`, read results, and synthesize a combined answer.
+The skill template provides a multi-phase workflow: gather context, select agents, choose dispatch mode (`run` vs `loop`), assemble prompt/focus, create prompt files via `counselors mkdir` when needed, dispatch, read results, and synthesize a combined answer.
 
 ## How is this different from...?
 

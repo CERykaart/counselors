@@ -33,6 +33,7 @@ describe('CLI', () => {
     expect(output).toContain('counselors');
     expect(output).toContain('run');
     expect(output).toContain('loop');
+    expect(output).toContain('mkdir');
     expect(output).toContain('cleanup');
     expect(output).toContain('config');
     expect(output).toContain('doctor');
@@ -125,6 +126,22 @@ describe('CLI', () => {
     expect(output).toContain('--group');
     expect(output).toContain('--dry-run');
     expect(output).toContain('--read-only');
+  });
+
+  it('mkdir --json writes prompt.md and returns metadata', () => {
+    const output = run('mkdir "review auth flow" --json');
+    const parsed = JSON.parse(output);
+
+    expect(parsed).toHaveProperty('outputDir');
+    expect(parsed).toHaveProperty('promptFilePath');
+    expect(parsed).toHaveProperty('slug');
+    expect(parsed.promptSource).toBe('inline');
+    expect(existsSync(parsed.promptFilePath)).toBe(true);
+
+    const prompt = readFileSync(parsed.promptFilePath, 'utf-8');
+    expect(prompt).toContain('review auth flow');
+
+    rmSync(parsed.outputDir, { recursive: true, force: true });
   });
 
   it('run --dry-run supports running the same tool multiple times', () => {

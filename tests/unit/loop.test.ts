@@ -130,9 +130,9 @@ describe('runLoop', () => {
     await runLoop(baseOptions({ rounds: 30 }));
 
     const finalPrompt = dispatchPrompts.at(-1) ?? '';
-    expect(finalPrompt).toContain('Only the most recent 24 outputs are included');
+    expect(finalPrompt).toContain('Only the most recent 8 outputs are included');
     const refCount = (finalPrompt.match(/@.*round-\d+\/claude\.md/g) ?? []).length;
-    expect(refCount).toBe(24);
+    expect(refCount).toBe(8);
   });
 
   describe('convergence detection', () => {

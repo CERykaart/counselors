@@ -30,7 +30,7 @@ export interface LoopResult {
   outcome: 'completed' | 'aborted' | 'converged';
 }
 
-const MAX_PRIOR_REPORT_REFS = 24;
+const MAX_PRIOR_REPORT_REFS = 8;
 
 /** Sum word counts across all tool reports in a round. */
 function totalWordCount(round: RoundManifest): number {

@@ -124,6 +124,50 @@ Multi-round dispatch — agents iterate, seeing prior outputs each round.
 
 Each round dispatches to all tools in parallel. Starting from round 2, each agent receives the outputs from all prior rounds, so it can build on previous analysis and avoid repeating findings.
 
+```text
+                     (optional preset mode)
+user prompt/focus
+      |
+      +--> [repo discovery phase] --> [prompt-writing phase] --> execution prompt
+      |                                                         (includes boilerplate)
+      |
+      +--------------------------------------------------------------+
+                                                             no preset
+
+execution prompt
+      |
+      v
++------------------------------- loop rounds -------------------------------+
+| round 1: dispatch to all selected tools in parallel                      |
+|          write per-tool outputs + round synthesis                        |
+|                                                                          |
+| round N>1: execution prompt + references to prior round outputs          |
+|            (new findings, challenge/refine prior findings)               |
+|            dispatch in parallel, write outputs + synthesis               |
+|                                                                          |
+| stop when:                                                               |
+| - max rounds reached, or                                                  |
+| - duration expires, or                                                    |
+| - convergence threshold reached, or                                       |
+| - user aborts (Ctrl+C after current round)                               |
++--------------------------------------------------------------------------+
+      |
+      v
+final synthesis + run manifest
+```
+
+```text
+Round behavior:
+
+round 1 prompt = base execution prompt
+
+round N prompt = base execution prompt
+               + "Prior Round Outputs" section
+               + @refs to recent prior tool outputs
+               + instruction to avoid duplicate findings, challenge/refine prior claims,
+                 and expand from prior leads
+```
+
 ```bash
 counselors loop "Find and fix test gaps in src/auth/" --rounds 5
 counselors loop --duration 30m "Hunt for edge cases"
